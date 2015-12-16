@@ -1,0 +1,69 @@
+#---
+- hosts: all
+  sudo: yes
+  tasks:
+  - name: install node
+    apt: update_cache=yes name={{ item }} state=present
+    with_items:
+      - nodejs
+      - npm
+
+  - name: Create Directory
+    file: path=/app state=directory
+
+  - name: run npm install forever
+    npm: name=forever global=yes state=latest  
+
+  - name: run npm install 
+    npm: name={{ item }} path=/app state=latest
+    with_items:
+      - express
+      - express-session
+      - redis
+      - request
+      - nodemailer-ses-transport
+      - nodemailer@0.7.1
+      - aws-sdk
+      - http-proxy
+      - http
+    
+
+- hosts: canary
+  sudo: yes
+  tasks:
+  - name: copy project files
+    copy: src=app.js  dest=/app
+
+  - name: copy project files
+    copy: src=config/ dest=/app
+
+  - name: "Stop all"
+    command: sudo forever stopall
+
+  - name: "Start example Node.js app."
+    command: sudo forever start /app/app.js
+
+
+- hosts: prod
+  sudo: yes
+  tasks:
+  - name: copy project files
+    copy: src=appprod.js  dest=/app
+
+  - name: "Stop all"
+    command: sudo forever stopall
+
+  - name: "Start example Node.js app."
+    command: sudo forever start /app/appprod.js
+
+- hosts: proxy
+  sudo: yes
+  tasks:
+  - name: copy project files
+    copy: src=infra.js  dest=/app
+
+  - name: "Stop all"
+    command: sudo forever stopall
+
+  - name: "Start example Node.js app."
+    command: sudo forever start /app/infra.js
